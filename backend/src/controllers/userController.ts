@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import * as userService from '../services/userService';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'segredo123';
@@ -63,4 +64,52 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
+};
+
+
+// CRUD DE USUÁRIOS
+// ===========================
+
+export const getUsers = async (req: Request, res: Response) => {
+  if (req.user?.tipo !== 'admin') {
+    return res.status(403).json({ error: 'Apenas administradores podem ver todos os usuários' });
+  }
+
+  const users = await userService.getAllUsers();
+  res.json(users);
+};
+
+export const getUser = async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+
+  if (req.user?.tipo !== 'admin' && req.user?.userId !== id) {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  const user = await userService.getUserById(id);
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  res.json(user);
+};
+
+export const updateUserData = async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+
+  if (req.user?.tipo !== 'admin' && req.user?.userId !== id) {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  const updated = await userService.updateUser(id, req.body);
+  res.json(updated);
+};
+
+export const removeUser = async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+
+  if (req.user?.tipo !== 'admin') {
+    return res.status(403).json({ error: 'Apenas administradores podem excluir usuários' });
+  }
+
+  await userService.deleteUser(id);
+  res.json({ message: 'Usuário removido com sucesso' });
 };
