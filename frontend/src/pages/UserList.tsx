@@ -1,38 +1,64 @@
 import { useEffect, useState } from 'react';
-import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  tipo: string;
+  status: string;
+  createdAt: string;
+}
 
 function UserList() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [error, setError] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await api.get(`/users?page=${page}&limit=5`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUsers(response.data.users);
-        setTotal(response.data.total);
-      } catch (err) {
-        setError('Erro ao carregar usuários ou acesso negado');
-      }
-    };
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const limit = 5;
+      const res = await api.get(`/users?page=${page}&limit=${limit}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
+      setUsers(res.data.users);
+      setTotalPages(Math.ceil(res.data.total / limit));
+      setError('');
+    } catch (err: any) {
+      setError('Erro ao carregar usuários');
+    }
+  };
+
+  useEffect(() => {
     fetchUsers();
   }, [page]);
 
-  const totalPages = Math.ceil(total / 5);
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Tem certeza que deseja deletar este usuário?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await api.delete(`/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (err) {
+      setError('Erro ao excluir usuário');
+    }
+  };
 
   return (
-    <div style={{ maxWidth: '600px', margin: 'auto' }}>
-      <h2>Usuários</h2>
+    <div style={{ maxWidth: '800px', margin: 'auto' }}>
+      <h2>Lista de Usuários</h2>
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <table border={1} cellPadding={8} style={{ width: '100%' }}>
+
+      <table border={1} cellPadding={8} cellSpacing={0} style={{ width: '100%' }}>
         <thead>
           <tr>
             <th>ID</th>
@@ -40,6 +66,8 @@ function UserList() {
             <th>Email</th>
             <th>Tipo</th>
             <th>Status</th>
+            <th>Criado em</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -50,26 +78,26 @@ function UserList() {
               <td>{u.email}</td>
               <td>{u.tipo}</td>
               <td>{u.status}</td>
+              <td>{new Date(u.createdAt).toLocaleString()}</td>
+              <td>
+                <button onClick={() => handleDelete(u.id)} style={{ color: 'red' }}>
+                  Excluir
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={() => setPage(p => Math.max(p - 1, 1))} disabled={page === 1}>
-          Anterior
-        </button>
-        <span style={{ margin: '0 1rem' }}>
-          Página {page} de {totalPages || 1}
-        </span>
-        <button onClick={() => setPage(p => Math.min(p + 1, totalPages))} disabled={page === totalPages}>
-          Próxima
-        </button>
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button>
+        <span style={{ margin: '0 1rem' }}>Página {page} de {totalPages}</span>
+        <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Próxima</button>
       </div>
 
-      <button onClick={() => navigate('/dashboard')} style={{ marginTop: '1rem' }}>
-        Voltar
-      </button>
+      <div style={{ marginTop: '2rem' }}>
+        <button onClick={() => navigate('/dashboard')}>Voltar para Dashboard</button>
+      </div>
     </div>
   );
 }
