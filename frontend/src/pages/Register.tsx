@@ -3,22 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 function Register() {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setMessage('');
+    setSuccess('');
 
     try {
-      await api.post('/users/register', { username, email, password });
-      setMessage('Cadastro realizado com sucesso!');
-      setTimeout(() => navigate('/'), 2000); // redireciona após 2s
+      await api.post('/users/register', form);
+      setSuccess('Cadastro realizado com sucesso!');
+      setTimeout(() => navigate('/login'), 1500); // Redireciona para login
     } catch (err: any) {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
@@ -31,23 +33,48 @@ function Register() {
   return (
     <div style={{ maxWidth: '400px', margin: 'auto' }}>
       <h2>Cadastro</h2>
-      <form onSubmit={handleRegister}>
+
+      {success && <p style={{ color: 'green' }}>{success}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      <form onSubmit={handleSubmit}>
         <div>
           <label>Usuário:</label>
-          <input value={username} onChange={e => setUsername(e.target.value)} required />
+          <input
+            name="username"
+            value={form.username}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
           <label>Email:</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
           <label>Senha:</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <input
+            name="password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
         </div>
-        {message && <p style={{ color: 'green' }}>{message}</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Cadastrar</button>
+        <button type="submit" style={{ marginTop: '1rem' }}>
+          Cadastrar
+        </button>
       </form>
+
+      <p style={{ marginTop: '1rem' }}>
+        Já tem conta? <a href="/login">Faça login</a>
+      </p>
     </div>
   );
 }

@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      const response = await api.post('/users/login', { email, password });
-      const token = response.data.token;
-
+      const response = await api.post('/users/login', form);
+      const { token } = response.data;
       localStorage.setItem('token', token);
       navigate('/dashboard');
     } catch (err: any) {
@@ -30,28 +32,41 @@ function Login() {
   return (
     <div style={{ maxWidth: '400px', margin: 'auto' }}>
       <h2>Login</h2>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
       <form onSubmit={handleLogin}>
         <div>
           <label>Email:</label>
           <input
             type="email"
-            value={email}
+            name="email"
+            value={form.email}
+            onChange={handleChange}
             required
-            onChange={e => setEmail(e.target.value)}
           />
         </div>
         <div>
           <label>Senha:</label>
           <input
             type="password"
-            value={password}
+            name="password"
+            value={form.password}
+            onChange={handleChange}
             required
-            onChange={e => setPassword(e.target.value)}
           />
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Entrar</button>
+        <button type="submit" style={{ marginTop: '1rem' }}>
+          Entrar
+        </button>
       </form>
+
+      <p style={{ marginTop: '1rem' }}>
+        Não tem uma conta? <a href="/register">Cadastre-se</a>
+      </p>
+      <p>
+        <a href="/recover">Esqueci a senha</a>
+      </p>
     </div>
   );
 }
