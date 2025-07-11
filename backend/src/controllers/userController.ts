@@ -92,7 +92,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = jwt.sign(
       { userId: user.id, username: user.username, tipo: user.tipo },
       JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '3h' }
     );
 
     res.json({ token });
@@ -164,15 +164,31 @@ export const getUser = async (req: Request, res: Response) => {
 };
 
 export const updateUserData = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
+  const idParam = req.params.id;
+
+  if (!idParam) {
+    return res.status(400).json({ error: 'ID não fornecido' });
+  }
+
+  const id = Number(idParam);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'ID inválido' });
+  }
 
   if (req.user?.tipo !== 'admin' && req.user?.userId !== id) {
     return res.status(403).json({ error: 'Acesso negado' });
   }
 
-  const updated = await userService.updateUser(id, req.body);
-  res.json(updated);
+  try {
+    const updated = await userService.updateUser(id, req.body);
+    res.json(updated);
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
 };
+
 
 export const removeUser = async (req: Request, res: Response) => {
   const id = Number(req.params.id);
