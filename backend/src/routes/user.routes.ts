@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { recoverPassword } from '../controllers/userController';
 import {
   register,
   login,
@@ -14,6 +15,8 @@ const router = Router();
 // Rotas públicas
 router.post('/register', register);
 router.post('/login', login);
+router.post('/recover', recoverPassword);
+
 
 // Rota protegida para pegar dados do usuário autenticado
 router.get('/me', verifyToken, (req, res) => {

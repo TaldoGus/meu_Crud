@@ -48,11 +48,46 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      res.status(401).json({ error: 'Senha inválida' });
+    //  Verifica se está bloqueado
+    if (user.status === 'B') {
+      res.status(403).json({ error: 'Usuário bloqueado por excesso de tentativas' });
       return;
     }
+
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      const tentativas = user.tentativas + 1;
+
+      //  Se atingir 3 tentativas, bloqueia
+      if (tentativas >= 3) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { tentativas, status: 'B' }
+        });
+
+        res.status(403).json({ error: 'Usuário bloqueado após 3 tentativas inválidas' });
+      } else {
+        //  Atualiza só tentativas
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { tentativas }
+        });
+
+        res.status(401).json({ error: `Senha inválida (${tentativas}/3)` });
+      }
+
+      return;
+    }
+
+    //  Se login for válido, zera tentativas e incrementa acesso
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        tentativas: 0,
+        quantAcesso: { increment: 1 }
+      }
+    });
 
     const token = jwt.sign(
       { userId: user.id, username: user.username, tipo: user.tipo },
@@ -67,6 +102,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 
+// ===========================
 // CRUD DE USUÁRIOS
 // ===========================
 
@@ -112,4 +148,26 @@ export const removeUser = async (req: Request, res: Response) => {
 
   await userService.deleteUser(id);
   res.json({ message: 'Usuário removido com sucesso' });
+};
+
+
+//Recuperação de senha simulada 
+export const recoverPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      res.status(404).json({ error: 'Email não encontrado' });
+      return;
+    }
+
+    // Simula envio de recuperação
+    console.log(`📨 Simulando envio de recuperação para: ${email}`);
+
+    res.json({ message: 'Instruções de recuperação enviadas (simulado)' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 };
