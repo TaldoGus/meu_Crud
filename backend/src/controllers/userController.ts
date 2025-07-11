@@ -106,14 +106,49 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 // CRUD DE USUÁRIOS
 // ===========================
 
-export const getUsers = async (req: Request, res: Response) => {
-  if (req.user?.tipo !== 'admin') {
-    return res.status(403).json({ error: 'Apenas administradores podem ver todos os usuários' });
-  }
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (req.user?.tipo !== 'admin') {
+      res.status(403).json({ error: 'Apenas administradores podem ver todos os usuários' });
+      return;
+    }
 
-  const users = await userService.getAllUsers();
-  res.json(users);
+    //  Pega page e limit da query (com valores padrão)
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    //  Busca total de usuários para frontend saber o total
+    const total = await prisma.user.count();
+
+    //  Busca os usuários da página
+    const users = await prisma.user.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        tipo: true,
+        status: true,
+        quantAcesso: true,
+        tentativas: true,
+        createdAt: true,
+      },
+    });
+
+    res.json({
+      page,
+      limit,
+      total,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar usuários' });
+  }
 };
+
 
 export const getUser = async (req: Request, res: Response) => {
   const id = Number(req.params.id);
