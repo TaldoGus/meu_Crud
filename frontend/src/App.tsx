@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 import UserList from './pages/UserList';
 import Recover from './pages/Recover';
-import Navbar from './components/NavBar';
+import Navbar from './components/Navbar';
 
 function App() {
   return (

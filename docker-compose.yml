@@ -1,0 +1,31 @@
+services:
+  load-balancer:
+    build: ./nginx
+    image: nt3:latest
+    container_name: load-balancer
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend-1
+      - frontend-2
+    networks:
+      - frontend_net
+    restart: unless-stopped
+
+  frontend-1:
+    build: ./frontend
+    image: teste2:latest
+    container_name: frontend-1
+    networks:
+      - frontend_net
+
+  frontend-2:
+    build: ./frontend
+    image: teste3:latest
+    container_name: frontend-2
+    networks:
+      - frontend_net
+
+networks:
+  frontend_net:
+    driver: bridge

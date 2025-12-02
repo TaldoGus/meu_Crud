@@ -30,8 +30,8 @@ function Login() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: 'auto' }}>
-      <h2>Login</h2>
+    <div style={{ maxWidth: '400px', margin: 'auto', minHeight: '100vh', backgroundColor: '#e8f5e9', paddingTop: '2rem' }}>
+      <h2>Login [INSTÂNCIA VERDE]</h2>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
